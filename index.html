@@ -1,0 +1,413 @@
+<title>랏코 단어 에피소드</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one-screen reader — a quiet seaside pixel window, then a plain reading card with a four-step quiz rhythm. Single light look by choice. */
+:root{
+  --bg:#f1f4f5;
+  --card:#ffffff;
+  --ink:#1f3440;
+  --dim:#6d8390;
+  --acc:#2f7196;
+  --line:#dbe4e8;
+  --tint:#eef5f8;
+  --ok:#2e7d5b;
+  --no:#b0514a;
+  --f-ko:"Gowun Dodum", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --f-en:"IBM Plex Mono", "Menlo", "Consolas", monospace;
+  color-scheme:light;
+}
+html,body{height:100%}
+body{
+  background:var(--bg);color:var(--ink);font-family:var(--f-ko);
+  padding-left:max(16px, env(safe-area-inset-left, 0px));
+  padding-right:max(16px, env(safe-area-inset-right, 0px));
+  padding-block:12px;box-sizing:border-box;display:flex;justify-content:center;
+}
+.app{position:relative;width:100%;max-width:540px;height:100%;display:flex;flex-direction:column;gap:12px;min-height:0}
+.bar{display:flex;align-items:center;gap:8px}
+.bar .title{flex:1;min-width:0;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar .title small{font-family:var(--f-en);font-size:12px;color:var(--dim);margin-right:8px;letter-spacing:.04em}
+.pill{flex:none;background:none;border:1px solid var(--line);color:var(--ink);font-family:var(--f-ko);font-size:14px;padding:5px 10px;border-radius:8px;cursor:pointer;white-space:nowrap}
+.pill:hover,.pill:focus-visible{border-color:var(--acc);outline:none}
+
+.screen{position:relative;width:100%;aspect-ratio:8/5;max-width:100%;border-radius:10px;overflow:hidden;flex:none;background:var(--card);border:1px solid var(--line)}
+.screen canvas{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges}
+#bloom{filter:blur(6px);mix-blend-mode:soft-light;opacity:.3}
+.tag{position:absolute;z-index:4;left:8px;top:8px;font-family:var(--f-en);font-size:11px;letter-spacing:.06em;color:var(--ink);background:rgba(255,255,255,.88);padding:2px 6px;border-radius:4px}
+
+.box{flex:1;min-height:0;overflow-y:auto;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:16px}
+.box>*{flex-shrink:0}
+.narr{font-size:17px;line-height:1.75;min-height:3.4em;white-space:pre-wrap;margin:0}
+.narr.wait{color:var(--dim)}
+.q{display:flex;flex-direction:column;gap:4px;padding-left:12px;border-left:2px solid var(--acc)}
+.q .goal{font-size:15px;color:var(--dim)}
+.choices{display:flex;flex-direction:column;gap:8px}
+.choice{display:grid;grid-template-columns:auto 1fr;align-items:baseline;gap:4px 12px;text-align:left;width:100%;
+  background:var(--card);border:1px solid var(--line);border-radius:8px;color:var(--ink);padding:11px 14px;cursor:pointer;
+  font-family:var(--f-en);font-size:16px;line-height:1.35}
+.choice .n{font-size:12px;color:var(--dim)}
+.choice b{font-weight:500;color:var(--acc)}
+.choice .ko{grid-column:2;font-family:var(--f-ko);font-size:14px;color:var(--dim)}
+.choice:hover:not(:disabled),.choice:focus-visible{border-color:var(--acc);outline:none}
+.choice:disabled{cursor:default;opacity:.5}
+.choice.right{opacity:1;border-color:var(--ok);background:#eef7f2}
+.choice.right .n{color:var(--ok)}
+.choice.wrong{opacity:1;border-color:var(--no);background:#fbf0ef}
+.choice.wrong .n{color:var(--no)}
+.verdict{margin:0;font-size:15px;line-height:1.6;white-space:pre-wrap;color:var(--dim)}
+.verdict.ok{color:var(--ok)}
+.verdict.no{color:var(--no)}
+.save{display:flex;flex-direction:column;gap:8px}
+.wchips{display:flex;flex-wrap:wrap;gap:6px}
+.wchip{display:flex;align-items:baseline;gap:6px;background:none;border:1px solid var(--line);border-radius:6px;color:var(--ink);padding:5px 10px;cursor:pointer;font-family:var(--f-en);font-size:14px}
+.wchip small{font-family:var(--f-ko);font-size:13px;color:var(--dim)}
+.wchip[aria-pressed="true"]{border-color:var(--acc);background:var(--tint);color:var(--acc)}
+.wchip:focus-visible{outline:2px solid var(--acc)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.btn{font-family:var(--f-ko);font-size:16px;background:var(--ink);color:#fff;border:none;border-radius:8px;padding:10px 20px;cursor:pointer}
+.btn:hover:not(:disabled){background:var(--acc)}
+.btn:disabled{background:var(--line);color:var(--dim);cursor:default}
+.btn:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.lab{font-size:13px;color:var(--dim)}
+.field{display:flex;flex-direction:column;gap:6px}
+.chip{font-family:var(--f-ko);font-size:14px;background:none;color:var(--dim);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer}
+.chip[aria-pressed="true"]{color:var(--ink);border-color:var(--ink)}
+.note{font-size:13px;color:var(--dim);line-height:1.6;margin:0}
+.err{font-size:14px;color:var(--no);line-height:1.6;margin:0}
+
+.sheet{position:absolute;inset:0;z-index:10;background:var(--bg);display:flex;flex-direction:column;gap:12px}
+.sheet .head{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:18px}
+.wlist{flex:1;min-height:0;overflow-y:auto;background:var(--card);border:1px solid var(--line);border-radius:10px;list-style:none;margin:0;padding:4px 18px}
+.wlist li{display:grid;grid-template-columns:1fr auto;gap:2px 12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.wlist li:last-child{border-bottom:none}
+.wlist .w{font-family:var(--f-en);font-size:17px;font-weight:500;color:var(--acc)}
+.wlist .k{font-size:15px}
+.wlist .ex{font-size:12px;color:var(--dim);grid-column:1}
+.wlist .del{grid-row:1/span 3;grid-column:2;align-self:center}
+.empty{color:var(--dim);font-size:14px;line-height:1.7;padding:20px 0}
+</style>
+
+<div class="app">
+  <div class="bar">
+    <div class="title" id="barTitle">랏코 단어 에피소드</div>
+    <button class="pill" id="wordsBtn">단어장 0</button>
+    <button class="pill" id="home" hidden>처음</button>
+  </div>
+  <div class="screen" aria-hidden="true">
+    <canvas id="base" width="128" height="80"></canvas>
+    <canvas id="bloom" width="128" height="80"></canvas>
+    <div class="tag" id="sceneTag">EP.00</div>
+  </div>
+  <div class="box" id="box"></div>
+  <div class="sheet" id="sheet" hidden>
+    <div class="head"><span id="sheetTitle">단어장</span><button class="pill" id="closeSheet">닫기</button></div>
+    <ul class="wlist" id="wlist"></ul>
+    <p class="note" id="wnote"></p>
+  </div>
+</div>
+
+<script>
+(() => {
+// ---------- pastel pixel renderer ----------
+const W=128,H=80;
+const base=document.getElementById('base'), bloom=document.getElementById('bloom');
+const c=base.getContext('2d'), bc=bloom.getContext('2d');
+const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+const C={out:'#4f6b78',sky:'#b9dcef',sky2:'#dcEEf6',wh:'#ffffff',gr:'#b9e2c4',gr2:'#93cfa6',gr3:'#6db487',pk:'#bfe0ec',pk2:'#5aa9cb',cr:'#f8efdc',ye:'#ffe6a3',br:'#cfae8c',br2:'#a98665',bl:'#8ec4e6',bl2:'#5a9fcc',pu:'#c4d4ec',n1:'#2f4468',n2:'#4a6490',mi:'#d3f0ea',wa:'#eef6f9',wa2:'#d6e9f0',sea:'#4f9cc8',sea2:'#3a83b0',sand:'#efdcb8',sand2:'#dfc79c'};
+function R(x,y,w,h,col){c.fillStyle=col;c.fillRect(x|0,y|0,w|0,h|0)}
+function P(x,y,col){R(x,y,1,1,col)}
+function dith(x,y,w,h,col){c.fillStyle=col;for(let j=0;j<h;j++)for(let i=(j%2);i<w;i+=2)c.fillRect(x+i,y+j,1,1)}
+function bands(y0,y1,cols){const n=cols.length,h=(y1-y0)/n;cols.forEach((col,i)=>{R(0,y0+i*h,W,Math.ceil(h),col);if(i>0)dith(0,y0+i*h-1,W,2,cols[i-1])})}
+function glow(x,y,r,rgb,a){c.save();const g=c.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,`rgba(${rgb},${a})`);g.addColorStop(1,`rgba(${rgb},0)`);c.fillStyle=g;c.fillRect(x-r,y-r,r*2,r*2);c.restore()}
+function circ(cx,cy,r,col){for(let y=-r;y<=r;y++)for(let x=-r;x<=r;x++)if(x*x+y*y<=r*r+r)P(cx+x,cy+y,col)}
+function rnd(seed){let s=seed;return()=>{s=(s*16807)%2147483647;return s/2147483647}}
+function cloud(x,y,s){circ(x,y,3*s,C.wh);circ(x+4*s,y-2*s,4*s,C.wh);circ(x+9*s,y,3*s,C.wh);R(x,y,9*s,3*s,C.wh)}
+function drift(t,x,span){return ((x+t/260)%(W+span))-span/2}
+function flower(x,y,col,t,i){const s=Math.sin(t/300+i)>0?1:0;P(x+s,y-2,col);P(x-1+s,y-1,col);P(x+1+s,y-1,col);P(x+s,y,col);P(x+s,y-1,C.ye);P(x,y+1,C.gr3);P(x,y+2,C.gr3)}
+function tree(x,y,r){R(x-1,y,3,10,C.br2);circ(x,y-2,r,C.gr2);circ(x-2,y-4,r-2,C.gr);P(x-3,y-6,C.wh)}
+function house(x,y,w,roof){R(x,y,w,14,C.cr);for(let i=0;i<5;i++)R(x-2+i,y-1-i,w+4-i*2,1,roof);R(x+w/2-2,y+6,4,8,C.br);R(x+2,y+3,3,3,C.bl);R(x+w-5,y+3,3,3,C.bl)}
+
+const scenes={
+ meadow(t){bands(0,48,[C.sky,C.sky2]);circ(18,12,6,C.ye);glow(18,12,18,'255,240,170',.6);
+  cloud(drift(t,40,30),12,1);cloud(drift(t,100,30),20,1);
+  for(let x=0;x<W;x++){const y=44+Math.round(4*Math.sin(x/16));R(x,y,1,80-y,C.gr)}
+  for(let x=0;x<W;x++){const y=58+Math.round(3*Math.sin(x/10+2));R(x,y,1,80-y,C.gr2)}
+  for(let x=84;x<120;x+=6){R(x,50,1,8,C.br);}R(84,52,36,1,C.br);R(84,55,36,1,C.br);
+  const r=rnd(5);for(let i=0;i<16;i++)flower((r()*W)|0,(62+r()*16)|0,i%2?C.pk2:C.wh,t,i)},
+ stall(t){bands(0,52,[C.pu,C.pk,C.cr]);circ(104,30,8,C.ye);glow(104,30,20,'255,230,160',.5);
+  R(0,52,W,28,C.br);dith(0,52,W,28,C.br2);
+  R(22,18,84,8,C.wh);for(let x=22;x<106;x+=12)R(x,18,6,8,C.pk2);for(let x=22;x<106;x+=6)P(x+3,26,x%12?C.wh:C.pk2);
+  R(26,26,2,26,C.br2);R(100,26,2,26,C.br2);R(20,48,88,6,C.br2);R(20,48,88,2,C.cr);
+  [44,62,80].forEach((x,i)=>{R(x,43,10,5,C.wh);R(x+1,42,8,1,C.pk);R(x+2,47,6,1,C.cr);for(let k=0;k<2;k++){const sy=40-k*3-((t/180+i*2+k)%3|0);P(x+3+k*3,sy,C.wh)}});
+  [32,96].forEach((x,i)=>{R(x-3,28,6,7,C.pk2);R(x-2,29,4,5,C.ye);glow(x,32,12,'255,220,150',.55+.1*Math.sin(t/240+i))});
+  R(30,32,12,2,C.cr);R(31,30,10,2,C.cr)},
+ room(t){R(0,0,W,58,C.wa);for(let y=4;y<58;y+=8)for(let x=(y%16?0:4);x<W;x+=8)P(x,y,C.wa2);
+  R(76,10,32,22,C.wh);R(78,12,28,18,C.sky);cloud(drift(t,82,20)%22+80,22,.6);R(91,12,2,18,C.wh);R(78,20,28,1,C.wh);R(74,30,36,2,C.br);
+  R(0,58,W,22,C.br);for(let y=62;y<80;y+=5)R(0,y,W,1,C.br2);
+  for(let y=-5;y<=5;y++){const w=Math.round(26*Math.sqrt(1-(y*y)/30));R(60-w,68+y,w*2,1,C.pk)}
+  R(8,40,40,18,C.bl);R(8,40,40,3,C.wh);R(8,38,12,5,C.wh);R(6,40,2,22,C.br2);
+  R(64,46,18,3,C.br2);R(66,49,2,9,C.br2);R(78,49,2,9,C.br2);R(70,41,6,5,C.wh);R(71,42,4,3,C.pk);
+  if(Math.sin(t/300)>0)P(72,38,C.wh);else P(73,37,C.wh)},
+ town(t){bands(0,50,[C.sky,C.sky2]);cloud(drift(t,30,30),10,1);cloud(drift(t,90,30),16,.8);
+  R(0,50,W,30,C.gr);R(0,62,W,8,C.cr);dith(0,62,W,8,C.wa2);
+  house(6,36,20,C.pk2);house(34,38,18,C.bl2);house(62,34,22,C.gr3);house(94,37,20,C.ye);
+  tree(56,46,5);tree(122,44,6);const r=rnd(9);for(let i=0;i<10;i++)flower((r()*W)|0,(72+r()*7)|0,i%2?C.pk2:C.ye,t,i)},
+ forest(t){bands(0,40,[C.mi,C.sky2]);
+  c.save();c.globalAlpha=.35;c.fillStyle=C.wh;[[30,0,8],[70,0,6],[100,0,7]].forEach(([x,y,w])=>{c.beginPath();c.moveTo(x,0);c.lineTo(x+w,0);c.lineTo(x+w+16,80);c.lineTo(x+16,80);c.fill()});c.restore();
+  R(0,56,W,24,C.gr);dith(0,56,W,6,C.gr2);
+  [[10,40,10],[34,36,12],[66,42,9],[92,34,13],[118,40,10]].forEach(([x,y,r])=>tree(x,y+10,r));
+  [[48,64],[80,68],[104,62]].forEach(([x,y])=>{R(x-3,y,7,3,C.pk2);P(x-1,y,C.wh);P(x+2,y+1,C.wh);R(x,y+3,1,3,C.cr)});
+  const bx=60+Math.sin(t/500)*20,by=30+Math.sin(t/230)*4,f=Math.sin(t/90)>0;P(bx,by,C.ye);P(bx-1,by-(f?1:0),C.pk);P(bx+1,by-(f?1:0),C.pk)},
+ shop(t){R(0,0,W,80,C.wa);for(let x=0;x<W;x+=10)R(x,0,5,6,x%20?C.wh:C.pk);
+  [14,30].forEach(y=>{R(8,y,112,2,C.br2);for(let x=10;x<118;x+=9){const col=[C.pk2,C.bl,C.ye,C.mi,C.pu][((x+y)/9|0)%5];R(x,y-7,7,7,col);R(x+1,y-6,5,1,C.wh)}});
+  R(8,46,112,2,C.br2);for(let x=12;x<116;x+=14){R(x,40,8,6,C.cr);R(x+2,38,4,2,C.pk)}
+  R(0,56,W,24,C.br);dith(0,56,W,24,C.br2);R(30,52,68,10,C.cr);R(30,52,68,2,C.wh);
+  [20,64,108].forEach((x,i)=>{R(x,6,1,4,C.br2);circ(x,12,2,C.ye);glow(x,12,10,'255,235,170',.5+.1*Math.sin(t/260+i))})},
+ lake(t){bands(0,40,[C.sky,C.sky2]);cloud(drift(t,60,30),10,1);circ(104,14,5,C.ye);
+  R(0,34,W,8,C.gr);for(let x=0;x<W;x++){const y=36+Math.round(2*Math.sin(x/12));R(x,y,1,4,C.gr2)}
+  R(0,42,W,38,C.bl);for(let y=44;y<80;y+=3){const s=((t/120)|0)+y;for(let x=0;x<W;x+=12){R((x+s*2)%W,y,4,1,C.sky2)}}
+  for(let i=0;i<5;i++){const x=(i*29+((t/40)|0))%W,y=48+i*6;if(Math.sin(t/200+i)>.3)P(x,y,C.wh)}
+  R(84,52,30,3,C.br);for(let x=86;x<114;x+=8)R(x,55,2,10,C.br2);
+  [8,14,20].forEach((x,i)=>{R(x,40-i%2*3,1,10,C.gr3);R(x-1,38-i%2*3,3,3,C.br2)})},
+ night(t){bands(0,56,[C.n1,C.n2]);circ(100,16,6,C.cr);circ(103,14,5,C.n1);glow(98,17,16,'255,245,220',.35);
+  const r=rnd(13);for(let i=0;i<22;i++){const x=(r()*W)|0,y=(r()*44)|0;if(Math.sin(t/400+i*1.3)>-.3)P(x,y,C.wh)}
+  for(let x=0;x<W;x++){const y=54+Math.round(5*Math.sin(x/18));R(x,y,1,80-y,'#4a6b7a')}
+  for(let x=0;x<W;x++){const y=64+Math.round(3*Math.sin(x/11+1));R(x,y,1,80-y,'#3f5d6b')}
+  R(20,46,18,12,C.cr);for(let i=0;i<5;i++)R(18+i,45-i,22-i*2,1,C.pk2);R(26,50,5,4,C.ye);glow(28,52,10,'255,225,140',.6)}
+};
+scenes.beach=function(t){bands(0,34,[C.sky,C.sky2]);circ(22,12,5,C.ye);glow(22,12,16,'255,240,190',.5);cloud(drift(t,70,30),10,1);
+  R(0,34,W,22,C.sea);for(let y=36;y<56;y+=3){const s=((t/110)|0)+y;for(let x=0;x<W;x+=11)R((x+s*2)%W,y,4,1,C.bl)}
+  for(let i=0;i<6;i++){const x=(i*23+((t/50)|0))%W;if(Math.sin(t/220+i)>.4)P(x,40+i*2,C.wh)}
+  const f=Math.round(Math.sin(t/400)*2);for(let x=0;x<W;x++){const y=55+f+Math.round(Math.sin(x/7+t/500));R(x,y,1,2,C.wh)}
+  R(0,57+f,W,30,C.sand);dith(0,64,W,16,C.sand2);
+  R(96,46,20,12,C.out);R(98,44,14,3,C.out);R(100,44,6,1,'#6d8996');
+  [[20,68],[48,74],[76,66]].forEach(([x,y])=>{R(x,y,3,2,C.wh);P(x+1,y-1,C.pk)})};
+scenes.bath=function(t){R(0,0,W,52,C.wa);for(let y=0;y<52;y+=6)R(0,y,W,1,C.wa2);for(let x=0;x<W;x+=6)R(x,0,1,52,C.wa2);
+  R(20,4,88,22,C.sky);for(let x=20;x<108;x++){const h=Math.max(0,18-Math.abs(x-64)*0.45);R(x,26-h,1,h,C.bl2)}for(let x=56;x<73;x++){const h=Math.max(0,18-Math.abs(x-64)*0.45)-12;if(h>0)R(x,26-18+0,1,Math.min(h,4),C.wh)}
+  R(18,2,92,2,C.br2);R(18,26,92,2,C.br2);
+  R(0,46,W,34,C.wh);R(10,50,108,22,C.sea);R(10,50,108,2,C.bl);for(let y=54;y<72;y+=4){const s=((t/160)|0)+y;for(let x=12;x<116;x+=14)R(12+((x+s*3)%104),y,5,1,C.bl)}
+  R(8,48,112,2,C.br);R(8,72,112,8,C.wa2);
+  [[100,74],[106,74],[103,70]].forEach(([x,y])=>{R(x,y,6,4,C.br);R(x,y,6,1,C.cr)});
+  for(let i=0;i<5;i++){const x=20+i*20,y=46-((t/60+i*9)%26),o=Math.round(Math.sin(t/300+i)*2);c.globalAlpha=Math.max(0,(y-20)/26)*.8;R(x+o,y,3,2,C.wh);R(x+o+1,y-2,2,2,C.wh);c.globalAlpha=1}};
+const BG=Object.keys(scenes);
+let cur='meadow';
+function frame(t){c.clearRect(0,0,W,H);(scenes[cur]||scenes.meadow)(t);bc.clearRect(0,0,W,H);bc.drawImage(base,0,0)}
+let last=0;function loop(t){if(t-last>90){frame(t);last=t}requestAnimationFrame(loop)}
+if(reduce)frame(0);else requestAnimationFrame(loop);
+function setScene(bg){cur=BG.includes(bg)?bg:'meadow';if(reduce)frame(0)}
+
+// ---------- wordbook ----------
+const wordsBtn=document.getElementById('wordsBtn'),sheet=document.getElementById('sheet'),wlist=document.getElementById('wlist'),wnote=document.getElementById('wnote');
+const KW='pxl-words-v1';
+let words={};           // id -> {w,ko,ex,work,at}
+let wcol=null;          // db collection when available
+const esc=s=>String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const wid=w=>'w-'+w.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,60);
+function loadLocalWords(){try{words=JSON.parse(localStorage.getItem(KW)||'{}')||{}}catch(e){words={}}}
+function saveLocalWords(){try{localStorage.setItem(KW,JSON.stringify(words))}catch(e){}}
+function wordsChanged(){wordsBtn.textContent='단어장 '+Object.keys(words).length;if(!sheet.hidden)renderSheet();
+  document.querySelectorAll('.wchip').forEach(b=>b.setAttribute('aria-pressed',!!words[b.dataset.id]))}
+async function toggleWord(w,ko,ex){
+  const id=wid(w);if(!id||id==='w-')return;
+  if(words[id]){const old=words[id];delete words[id];wordsChanged();
+    if(wcol){try{await wcol.doc(id).delete()}catch(e){words[id]=old;wordsChanged()}}else saveLocalWords()}
+  else{const rec={w:w.toLowerCase(),ko:ko||'',ex:ex||'',work:S.work||'오리지널',at:Date.now()};words[id]=rec;wordsChanged();
+    if(wcol){try{await wcol.doc(id).set(rec)}catch(e){delete words[id];wordsChanged()}}else saveLocalWords()}
+}
+function renderSheet(){
+  const list=Object.entries(words).sort((a,b)=>b[1].at-a[1].at);
+  document.getElementById('sheetTitle').textContent='단어장 · '+list.length;
+  wlist.innerHTML=list.length?list.map(([id,x])=>`<li><span class="w">${esc(x.w)}</span><span class="k">${esc(x.ko)}</span><span class="ex">${esc(x.ex)} · ${esc(x.work)}</span><button class="pill del" data-id="${esc(id)}" aria-label="${esc(x.w)} 지우기">지우기</button></li>`).join('')
+    :`<li class="empty">아직 비어 있어요. 선택지를 고른 뒤 아래에 뜨는 단어를 누르면 여기에 모여요.</li>`;
+  wlist.querySelectorAll('.del').forEach(b=>b.onclick=()=>{const x=words[b.dataset.id];if(x)toggleWord(x.w)});
+  wnote.textContent=wcol?'Claude 계정에 저장돼서 다른 기기에서도 보여요.':'이 기기 브라우저에만 저장돼요.';
+}
+wordsBtn.onclick=()=>{renderSheet();sheet.hidden=false;document.getElementById('closeSheet').focus()};
+document.getElementById('closeSheet').onclick=()=>{sheet.hidden=true;wordsBtn.focus()};
+loadLocalWords();wordsChanged();
+
+// ---------- game ----------
+const box=document.getElementById('box'),home=document.getElementById('home'),barTitle=document.getElementById('barTitle'),tag=document.getElementById('sceneTag');
+const KEY='pxl-rakko-v3';
+const WORK='치이카와 (랏코 중심)';
+const EP_LEN=5;
+const LEVELS={
+ hs:{label:'고등 필수',desc:'고등학교 필수 영단어 수준(수능 기본 어휘). 중학교 수준보다는 조금 어렵게.'},
+ toeic:{label:'토익',desc:'토익 빈출 어휘 수준(비즈니스·일상 상황 단어, 예: postpone, reimburse, negotiate, inspect, confirm, deadline). 이야기 속 상황에 자연스럽게 섞어.'},
+ tr:{label:'편입 기초',desc:'편입영어 기초 어휘 수준(수능보다 한 단계 어려운 단어, 예: deter, mitigate, scrutinize, reluctant).'}
+};
+const fresh=lv=>({work:WORK,level:lv||'hs',ep:1,epTitle:'',history:[],current:null,used:[],pastEps:[],score:0,asked:0,epStart:0});
+let S=fresh();
+let sample=null,ctl=null,typing=null;
+function load(){try{const v=JSON.parse(localStorage.getItem(KEY)||'null');if(v&&v.current)return v}catch(e){}return null}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}}
+function clearSave(){try{localStorage.removeItem(KEY)}catch(e){}}
+const NUM=['1','2','3','4'];
+const STOP=new Set('a an the to of in on at for with by from up out off into onto over under his her him she he it its they them their you your my me we us our i is are be am was were this that these those and or but not no as so than then'.split(' '));
+
+const DEMO=[
+ {bg:'beach',ep_title:'바닷가 수련',text:'이른 아침 바닷가. 파도에 떠밀려 온 병 안에 접힌 쪽지가 보인다. 병은 금이 가 있어서 세게 잡으면 깨질 것 같다.',answer:0,why:'금이 간 병이라 조심해서 다뤄야 해요.',
+  choices:[{en:'open it cautiously',key:'cautiously',ko:'조심스럽게 연다'},{en:'smash it on a rock',key:'smash',ko:'바위에 내리쳐 깬다'},{en:'abandon it on the sand',key:'abandon',ko:'모래 위에 버려둔다'}],
+  gloss:{open:'열다',cautiously:'조심스럽게',smash:'박살 내다',rock:'바위',abandon:'버리다',sand:'모래'}},
+ {bg:'bath',text:'쪽지에는 "목욕탕 제일 안쪽 탕"이라고만 적혀 있었다. 목욕탕에 가 보니 안쪽 탕 앞에서 치이카와가 겁먹은 얼굴로 서 있다. 물이 너무 뜨거울까 봐 걱정하는 눈치다.',answer:2,why:'겁먹은 친구에게는 안심시켜 주는 게 알맞아요.',
+  choices:[{en:'mock the little one',key:'mock',ko:'놀린다'},{en:'push the little one in',key:'push',ko:'밀어 넣는다'},{en:'reassure the little one',key:'reassure',ko:'안심시킨다'}],
+  gloss:{mock:'놀리다',little:'작은',one:'아이',push:'밀다',reassure:'안심시키다'}},
+ {bg:'night',ending:true,text:'랏코가 먼저 손을 넣어 보고 괜찮다고 고개를 끄덕였다. 안쪽 탕은 그냥 아주 따끈한 탕이었다. 돌아오는 길엔 별이 가득했다.\n\n(맛보기는 여기까지예요. Claude 앱에서 열면 새 에피소드가 계속 이어져요.)',choices:[],gloss:{}}
+];
+
+function sceneNo(){return S.history.length-(S.epStart||0)+(S.current?1:0)}
+function header(){const ep='EP.'+String(S.ep).padStart(2,'0');barTitle.innerHTML=S.epTitle?`<small>${ep}</small>${esc(S.epTitle)}`:'랏코 단어 에피소드';tag.textContent=ep+' · '+sceneNo()+'/'+EP_LEN}
+
+function titleScreen(){
+  if(ctl)ctl.abort();home.hidden=true;setScene('beach');tag.textContent='EP.00';barTitle.textContent='랏코 단어 에피소드';
+  const saved=load();
+  box.innerHTML=`
+   <p class="narr">랏코가 중심인 치이카와 세계의 새 에피소드.<br>장면마다 상황을 읽고, 랏코에게 가장 알맞은 행동을 영어로 골라요.</p>
+   <div class="field"><span class="lab">단어 수준</span><div class="row" id="lv">
+     ${Object.entries(LEVELS).map(([k,v])=>`<button class="chip" data-lv="${k}" aria-pressed="${S.level===k}">${v.label}</button>`).join('')}</div></div>
+   <div class="row"><button class="btn" id="start">새 에피소드</button>${saved?`<button class="pill" id="cont">이어하기 · EP.${String(saved.ep).padStart(2,'0')}</button>`:''}</div>
+   <p class="note" id="mode"></p>`;
+  box.querySelectorAll('[data-lv]').forEach(b=>b.onclick=()=>{S.level=b.dataset.lv;box.querySelectorAll('[data-lv]').forEach(x=>x.setAttribute('aria-pressed',x===b))});
+  document.getElementById('start').onclick=()=>{const keep=saved?{ep:(saved.ep||0)+1,pastEps:saved.pastEps||[],used:saved.used||[]}:{};S=Object.assign(fresh(S.level),keep);if(saved&&saved.epTitle)S.pastEps.push(saved.epTitle);clearSave();begin()};
+  if(saved)document.getElementById('cont').onclick=()=>{S=saved;if(!LEVELS[S.level])S.level='hs';home.hidden=false;showScene(S.current,true)};
+  modeNote();
+}
+function modeNote(){const m=document.getElementById('mode');if(m)m.textContent=sample?'':'지금은 맛보기 모드예요. Claude 앱에서 열면 새 에피소드가 만들어져요.'}
+
+function buildPrompt(){
+  const lv=LEVELS[S.level].desc;
+  const n=S.history.length-(S.epStart||0)+1;
+  const past=S.history.slice(S.epStart||0).map(h=>`장면: ${h.text}\n랏코가 한 행동: ${h.done}`).join('\n\n');
+  const last=n>=EP_LEN;
+  return `너는 영어 단어 퀴즈가 들어간 짧은 이야기의 작가야. 무대는 '치이카와' 세계.
+규칙:
+- 주인공은 랏코. 랏코의 성격과 일상(토벌, 수련, 목욕탕, 동료들과의 관계)을 중심으로, 치이카와·하치와레·우사기 등 다른 원작 캐릭터도 자연스럽게 등장시켜. 원작에 없는 새 에피소드로 쓰고, 실제 에피소드 줄거리나 대사는 옮기지 마.
+- 담백하고 차분한 문체. 과장된 의성어·감탄사·이모티콘은 쓰지 마. 이야기는 앞뒤가 맞게 이어져야 해.
+- text: 한국어 2~3문장의 상황 설명. 랏코가 어떻게 해야 할지 판단할 단서(위험, 누군가의 감정, 필요한 것 등)를 분명히 넣되, 정답 행동을 직접 말하지는 마.
+- choices 3개: 랏코가 할 수 있는 행동을 짧은 영어 구(2~5단어)로. 상황과 랏코의 성격에 비추어 알맞은 행동은 딱 1개, 나머지 2개는 단서를 읽으면 분명히 어울리지 않는 행동(무례하거나, 위험하거나, 상황과 반대되는 것). 단어 뜻을 알아야 판단할 수 있게, 각 구의 핵심 단어(key)가 판단의 열쇠가 되게 해. ko는 그 구의 한국어 뜻.
+- answer: 알맞은 행동의 인덱스(0부터). 위치는 매번 섞어.
+- why: 왜 그게 알맞은지 한국어 한 문장(단서를 짚어서).
+- 단어 수준: ${lv}
+- 이미 나온 단어는 key로 다시 쓰지 마: ${S.used.slice(-80).join(', ')||'없음'}
+- gloss: 세 선택지에 나온 모든 내용어(관사·대명사·전치사 제외)를 소문자로, 이 문맥에서의 짧은 한국어 뜻과 함께.
+- bg는 장면에 가장 가까운 배경 하나: ${BG.join(', ')} (beach=바닷가, bath=목욕탕, meadow=풀밭·수련, stall=라멘 가게·먹을 것, room=집 안, town=마을, forest=숲, shop=가게·일하는 곳, lake=호숫가, night=밤).
+${S.pastEps.length?`- 지난 에피소드 제목(겹치지 않게): ${S.pastEps.slice(-10).join(', ')}\n`:''}
+에피소드는 ${EP_LEN}장면이고 지금은 ${n}번째 장면이야.${n===1?' 첫 장면이니 ep_title(한국어 짧은 에피소드 제목)도 넣어.':''}
+${last?'이번이 마지막 장면이야. 앞 행동의 결과로 에피소드를 담백하게 마무리하고 "ending":true, "choices":[] 로 답해.':''}
+${past?`\n이번 에피소드의 지금까지:\n${past}\n`:''}
+JSON만 답해. 형식:
+{"bg":"beach","ep_title":"바닷가 수련","ending":false,"text":"이른 아침 바닷가. 파도에 떠밀려 온 병 안에 쪽지가 보인다. 병은 금이 가 있어서 세게 잡으면 깨질 것 같다.","choices":[{"en":"smash it on a rock","key":"smash","ko":"바위에 내리쳐 깬다"},{"en":"open it cautiously","key":"cautiously","ko":"조심스럽게 연다"},{"en":"abandon it on the sand","key":"abandon","ko":"모래 위에 버려둔다"}],"answer":1,"why":"금이 간 병이라 조심해서 다뤄야 해요.","gloss":{"smash":"박살 내다","rock":"바위","open":"열다","cautiously":"조심스럽게","abandon":"버리다","sand":"모래"}}`;
+}
+function clean(d){
+  if(!d||typeof d.text!=='string')throw{code:'invalid_json'};
+  const ending=!!d.ending;
+  const ch=(Array.isArray(d.choices)?d.choices:[]).filter(x=>x&&x.en).slice(0,3).map(x=>({en:String(x.en),key:String(x.key||'').trim(),ko:String(x.ko||'')}));
+  const ans=Number(d.answer);
+  if(!ending&&(ch.length<2||!Number.isInteger(ans)||ans<0||ans>=ch.length))throw{code:'invalid_json'};
+  const gloss={};if(d.gloss&&typeof d.gloss==='object')for(const[k,v]of Object.entries(d.gloss))gloss[String(k).toLowerCase()]=String(v);
+  return{bg:BG.includes(d.bg)?d.bg:'meadow',ep_title:typeof d.ep_title==='string'?d.ep_title.trim():'',ending,text:d.text.trim(),why:typeof d.why==='string'?d.why.trim():'',answer:ending?-1:ans,choices:ending?[]:ch,gloss};
+}
+function fetchScene(){
+  if(!sample){const i=Math.min(S.history.length-(S.epStart||0),DEMO.length-1);return new Promise(r=>setTimeout(()=>r(DEMO[i]),400))}
+  ctl=new AbortController();
+  return sample.json(buildPrompt(),{modelTier:'quick',cache:false,signal:ctl.signal}).then(clean);
+}
+function errText(e){const k=e&&e.code;
+  if(k==='not_granted'||k==='sampling_disabled'||k==='not_declared')return'Claude 사용이 허락되지 않아서 에피소드를 만들 수 없어요. 처음으로 돌아가면 맛보기 모드로 해볼 수 있어요.';
+  if(k==='rate_limited')return'잠깐 너무 많이 요청했어요. 조금 있다가 다시 눌러주세요.';
+  if(k==='session_expired')return'로그인이 만료됐어요. 다시 로그인한 뒤 이어서 해주세요.';
+  if(k==='refused')return'이 장면은 만들 수 없었어요. 새 에피소드로 시작해보세요.';
+  return'장면을 불러오지 못했어요. 다시 시도해주세요.'}
+function blocked(e){return['not_granted','sampling_disabled','not_declared','capability_disabled'].includes(e&&e.code)}
+
+function begin(){home.hidden=false;S.epStart=S.history.length;S.epTitle='';S.score=0;S.asked=0;header();loading('에피소드 '+S.ep+' 준비 중');
+  fetchScene().then(sc=>{S.current=sc;if(sc.ep_title)S.epTitle=sc.ep_title;save();showScene(sc)}).catch(e=>{if(e&&e.code==='cancelled')return;if(blocked(e))sample=null;failBox(e,begin)})}
+function loading(msg){box.innerHTML=`<p class="narr wait">${esc(msg)}</p>`}
+function failBox(e,retry){box.innerHTML=`<p class="err">${esc(errText(e))}</p><div class="row"><button class="btn" id="retry">다시 시도</button></div>`;document.getElementById('retry').onclick=retry}
+
+function typeOut(el,text,done){
+  if(typing)clearInterval(typing);
+  if(reduce){el.textContent=text;done();return}
+  let i=0;el.textContent='';
+  const finish=()=>{clearInterval(typing);typing=null;el.textContent=text;el.onclick=null;done()};
+  el.onclick=finish;
+  typing=setInterval(()=>{i+=1;el.textContent=text.slice(0,i);if(i>=text.length)finish()},24);
+}
+function hl(en,key){const e=esc(en);if(!key)return e;const re=new RegExp('('+key.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\w*)','i');return e.replace(re,'<b>$1</b>')}
+function shuffled(n){const a=[...Array(n).keys()];for(let i=n-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+
+function showScene(sc,instant){
+  setScene(sc.bg);header();
+  box.innerHTML=`<p class="narr" id="narr"></p><div class="q" id="q" hidden></div><div class="choices" id="ch" hidden></div><p class="verdict" id="vd" hidden></p><div class="save" id="sv" hidden></div><div class="row" id="nx" hidden></div>`;
+  const narr=document.getElementById('narr'),ch=document.getElementById('ch'),q=document.getElementById('q');
+  const order=shuffled(sc.choices.length);
+  q.innerHTML=`<span class="goal">랏코에게 알맞은 행동은?</span>`;
+  ch.innerHTML=order.map((i,pos)=>{const x=sc.choices[i];return `<button class="choice" data-i="${i}"><span class="n">${NUM[pos]}</span><span>${hl(x.en,x.key)}</span><span class="ko" hidden>${esc(x.ko)}</span></button>`}).join('');
+  const reveal=()=>{if(sc.choices.length){q.hidden=false;ch.hidden=false;ch.querySelector('.choice').focus({preventScroll:true})}else endEpisode()};
+  if(instant){narr.textContent=sc.text;reveal()}else typeOut(narr,sc.text,reveal);
+  ch.querySelectorAll('.choice').forEach(b=>b.onclick=()=>choose(sc,+b.dataset.i));
+}
+function endEpisode(){
+  const nx=document.getElementById('nx'),vd=document.getElementById('vd');nx.hidden=false;
+  if(S.asked){vd.hidden=false;vd.className='verdict';vd.textContent=`이번 에피소드 ${S.score} / ${S.asked} 정답`}
+  const demoDone=!sample;
+  nx.innerHTML=`<button class="btn" id="again">${demoDone?'처음으로':'다음 에피소드'}</button>`;
+  document.getElementById('again').onclick=()=>{
+    if(demoDone){clearSave();S=fresh(S.level);titleScreen();return}
+    if(S.epTitle)S.pastEps.push(S.epTitle);S.current=null;S.ep+=1;
+    S.history=S.history.slice(-12);begin()};
+}
+
+function wordChips(sc){
+  const gloss=sc.gloss||{},seen=new Set(),out=[];
+  sc.choices.forEach(x=>x.en.toLowerCase().replace(/[^a-z' -]/g,' ').split(/\s+/).forEach(w=>{
+    w=w.replace(/^'+|'+$/g,'');if(!w||STOP.has(w)&&!gloss[w]||seen.has(w))return;seen.add(w);
+    const ko=gloss[w];if(ko)out.push({w,ko,ex:x.en})}));
+  return out;
+}
+function choose(sc,i){
+  const ch=document.getElementById('ch'),nx=document.getElementById('nx'),sv=document.getElementById('sv'),vd=document.getElementById('vd');
+  const ok=i===sc.answer;
+  ch.querySelectorAll('.choice').forEach(b=>{const j=+b.dataset.i;b.disabled=true;b.querySelector('.ko').hidden=false;
+    if(j===sc.answer)b.classList.add('right');else if(j===i)b.classList.add('wrong')});
+  S.asked+=1;if(ok)S.score+=1;
+  vd.hidden=false;vd.className='verdict '+(ok?'ok':'no');
+  vd.textContent=(ok?'정답':'오답 · 알맞은 행동은 '+sc.choices[sc.answer].en)+(sc.why?'\n'+sc.why:'');
+  const chips=wordChips(sc);
+  if(chips.length){sv.hidden=false;
+    sv.innerHTML=`<span class="lab">모르는 단어를 눌러 단어장에 넣기</span><div class="wchips">${chips.map(x=>`<button class="wchip" data-id="${esc(wid(x.w))}" aria-pressed="${!!words[wid(x.w)]}">${esc(x.w)}<small>${esc(x.ko)}</small></button>`).join('')}</div>`;
+    sv.querySelectorAll('.wchip').forEach((b,k)=>b.onclick=()=>toggleWord(chips[k].w,chips[k].ko,chips[k].ex));}
+  const a=sc.choices[sc.answer];S.history.push({text:sc.text,done:a.en+' ('+a.ko+')'});sc.choices.forEach(x=>x.key&&S.used.push(x.key));S.current=null;
+  nx.hidden=false;nx.innerHTML=`<button class="btn" id="next" disabled>다음 장면 준비 중</button>`;
+  const btn=document.getElementById('next');
+  const go=()=>fetchScene().then(next=>{S.current=next;save();btn.disabled=false;btn.textContent=next.ending?'마지막 장면':'다음 장면';btn.onclick=()=>showScene(next)})
+    .catch(e=>{if(e&&e.code==='cancelled')return;if(blocked(e))sample=null;
+      btn.disabled=false;btn.textContent='다시 시도';btn.onclick=()=>{btn.disabled=true;btn.textContent='다음 장면 준비 중';go()};
+      nx.querySelector('.err')?.remove();const p=document.createElement('p');p.className='err';p.textContent=errText(e);nx.prepend(p)});
+  go();
+}
+home.onclick=titleScreen;
+
+titleScreen();
+(async()=>{
+  try{if(window.claude&&window.claude.use){sample=await window.claude.use('sample');modeNote()}}catch(e){sample=null}
+  try{
+    if(!(window.claude&&window.claude.use))return;
+    const [db,user]=await Promise.all([window.claude.use('db'),window.claude.use('user')]);
+    if(!db||!user)return;
+    const uid=await user.id();if(!uid)return;
+    const col=db.collection('data/users/'+uid);
+    col.onSnapshot(snap=>{
+      if(!wcol){ // first sync: carry over words saved on this device before the account store connected
+        wcol=col;const local=words;const remote={};snap.docs.forEach(d=>{remote[d.id]=d.data()});
+        Object.entries(local).forEach(([id,x])=>{if(!remote[id]){remote[id]=x;col.doc(id).set(x).catch(()=>{})}});
+        words=remote;try{localStorage.removeItem(KW)}catch(e){}
+      }else{const m={};snap.docs.forEach(d=>{m[d.id]=d.data()});words=m}
+      wordsChanged();
+    },()=>{wcol=null;loadLocalWords();wordsChanged()});
+  }catch(e){}
+})();
+})();
+</script>
