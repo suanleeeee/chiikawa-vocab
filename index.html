@@ -88,17 +88,26 @@ body{
 .wlist .del{grid-row:1/span 3;grid-column:2;align-self:center}
 .empty{color:var(--dim);font-size:14px;line-height:1.7;padding:20px 0}
 
-.path{display:flex;flex-direction:column;gap:10px}
-.node{display:flex;align-items:center;gap:12px;width:100%;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;cursor:pointer;text-align:left;font-family:var(--f-ko);color:var(--ink)}
-.node:hover:not(:disabled),.node:focus-visible{border-color:var(--acc);outline:none}
-.node:disabled{cursor:default;opacity:.55}
-.node .no{flex:none;width:30px;height:30px;border-radius:50%;background:var(--tint);color:var(--acc);display:flex;align-items:center;justify-content:center;font-family:var(--f-en);font-size:13px}
-.node.done .no{background:var(--ok);color:#fff}
-.node .mid{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
-.node .et{font-size:15px}
-.node .es{font-size:12px;color:var(--dim)}
-.node .stat{flex:none;font-size:12px;color:var(--dim);font-family:var(--f-en)}
-.node.done .stat{color:var(--ok)}
+.mappath{position:relative;padding:4px 0}
+.mappath::before{content:'';position:absolute;left:50%;top:6px;bottom:6px;width:2px;background:repeating-linear-gradient(to bottom,var(--line) 0 6px,transparent 6px 12px);transform:translateX(-50%);z-index:0}
+.maprow{position:relative;display:flex;margin-bottom:20px;z-index:1}
+.maprow:last-child{margin-bottom:0}
+.maprow.pos-c{justify-content:center}
+.maprow.pos-r{justify-content:flex-end;padding-right:10%}
+.maprow.pos-l{justify-content:flex-start;padding-left:10%}
+.mapnode{display:flex;flex-direction:column;align-items:center;gap:6px;background:none;border:none;cursor:pointer;padding:0;font-family:var(--f-ko)}
+.mapnode .circle{width:56px;height:56px;border-radius:50%;background:var(--card);border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-family:var(--f-en);font-size:15px;color:var(--acc)}
+.mapnode:hover:not(:disabled) .circle,.mapnode:focus-visible .circle{border-color:var(--acc);outline:none}
+.mapnode.done .circle{background:var(--ok);border-color:var(--ok);color:#fff}
+.mapnode:disabled{cursor:default;opacity:.45}
+.mapnode .label{font-size:12px;max-width:104px;text-align:center;color:var(--dim);line-height:1.35}
+
+.setsec{display:flex;flex-direction:column;gap:10px}
+.setsec h3{font-size:14px;font-weight:500;margin:0;color:var(--ink)}
+.setgrid{display:flex;flex-wrap:wrap;gap:8px}
+.setchip{font-family:var(--f-ko);font-size:14px;background:none;color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px 12px;cursor:pointer}
+.setchip:hover,.setchip:focus-visible{border-color:var(--acc);outline:none}
+.setchip[aria-pressed="true"]{border-color:var(--acc);background:var(--tint);color:var(--acc)}
 
 [hidden]{display:none}
 </style>
@@ -107,6 +116,7 @@ body{
   <div class="bar">
     <div class="title" id="barTitle">랏코 단어 에피소드</div>
     <button class="pill" id="wordsBtn">단어장 0</button>
+    <button class="pill" id="settingsBtn">설정</button>
     <button class="pill" id="home" hidden>지도</button>
   </div>
   <div class="screen" aria-hidden="true">
@@ -122,6 +132,7 @@ body{
   </div>
 </div>
 
+<script src="data.js"></script>
 <script>
 (() => {
 // ---------- pastel pixel renderer ----------
@@ -240,200 +251,77 @@ wordsBtn.onclick=()=>{renderSheet();sheet.hidden=false;document.getElementById('
 document.getElementById('closeSheet').onclick=()=>{sheet.hidden=true;wordsBtn.focus()};
 loadLocalWords();wordsChanged();
 
-// ---------- episodes (pre-written, works fully offline/static) ----------
-const EPISODES=[
-{title:'바닷가 메모',level:'고등 필수',scenes:[
- {bg:'beach',text:'이른 아침 바닷가. 파도에 떠밀려 온 병 안에 접힌 쪽지가 보인다. 병은 금이 가 있어서 세게 잡으면 깨질 것 같다.',
-  choices:[{en:'open it cautiously',key:'cautiously',ko:'조심스럽게 연다'},{en:'smash it on a rock',key:'smash',ko:'바위에 내리쳐 깬다'},{en:'discard it at once',key:'discard',ko:'즉시 버린다'}],
-  answer:0,why:'병에 금이 가 있어서 조심히 다뤄야 해요.',gloss:{open:'열다',cautiously:'조심스럽게',smash:'내리쳐 깨다',rock:'바위',discard:'버리다',once:'즉시'}},
- {bg:'lake',text:'쪽지엔 "호숫가 낡은 다리 아래"라고 적혀 있었다. 가 보니 하치와레가 다리 밑에서 비에 젖어 떨고 있다.',
-  choices:[{en:'comfort the shivering friend',key:'comfort',ko:'떨고 있는 친구를 위로한다'},{en:'scold him for hiding there',key:'scold',ko:'거기 숨었다고 혼낸다'},{en:'ignore the trembling friend',key:'ignore',ko:'떨고 있는 친구를 못 본 척한다'}],
-  answer:0,why:'추위에 떨고 있는 친구는 위로해 줘야 해요.',gloss:{comfort:'위로하다',shivering:'떨고 있는',scold:'혼내다',ignore:'못 본 척하다',trembling:'떨고 있는'}},
- {bg:'forest',text:'하치와레를 데리고 집으로 가는 길, 숲 안쪽에서 길을 잃은 듯한 희미한 목소리가 들린다. "도와줘"라는 우사기의 소리 같다.',
-  choices:[{en:'search for the lost voice',key:'search',ko:'소리가 난 쪽을 찾아본다'},{en:'pretend not to hear it',key:'pretend',ko:'못 들은 척한다'},{en:'run away out of fear',key:'fear',ko:'무서워서 도망친다'}],
-  answer:0,why:'도움을 요청하는 소리를 들었으면 찾아봐야 해요.',gloss:{search:'찾다',lost:'길을 잃은',pretend:'~인 척하다',fear:'두려움'}},
- {bg:'room',text:'다 같이 집으로 돌아와 젖은 옷을 말리는 중. 우사기가 넘어져 다친 무릎을 소매로 가리며 숨기려 한다.',
-  choices:[{en:'treat the hidden wound',key:'wound',ko:'숨긴 상처를 치료해 준다'},{en:'laugh at the clumsy fall',key:'clumsy',ko:'서툰 실수를 비웃는다'},{en:'blame her for falling',key:'blame',ko:'넘어진 걸 탓한다'}],
-  answer:0,why:'다친 걸 숨기는 친구는 치료해 줘야 해요.',gloss:{treat:'치료하다',wound:'상처',clumsy:'서툰',blame:'탓하다'}},
- {bg:'beach',ending:true,text:'쪽지의 주인이 누구였는지는 끝내 알 수 없었지만, 셋 다 무사히 집으로 돌아왔다. 창밖 바다는 다시 잠잠했다.'}
-]},
-{title:'라멘 가게 한나절',level:'고등 필수',scenes:[
- {bg:'stall',text:'손님이 몰려 치이카와가 혼자 가게를 보고 있다. 주문이 쌓여 쩔쩔매는 눈치다.',
-  choices:[{en:'offer to help out',key:'offer',ko:'돕겠다고 나선다'},{en:'complain about the crowd',key:'complain',ko:'손님이 많다고 불평한다'},{en:'sneak out the back door',key:'sneak',ko:'뒷문으로 몰래 빠져나간다'}],
-  answer:0,why:'힘들어하는 친구는 도와야 해요.',gloss:{offer:'제안하다',complain:'불평하다',crowd:'(많은) 손님,무리',sneak:'몰래 빠지다'}},
- {bg:'town',text:'배달 주소가 잘못 적혀서 손님이 화가 나 있다.',
-  choices:[{en:'apologize and fix the order',key:'apologize',ko:'사과하고 주문을 고친다'},{en:'argue with the customer',key:'argue',ko:'손님과 다툰다'},{en:'deny any mistake',key:'deny',ko:'잘못을 부정한다'}],
-  answer:0,why:'실수했을 땐 사과하고 바로잡아야 해요.',gloss:{apologize:'사과하다',fix:'고치다',argue:'다투다',deny:'부정하다',mistake:'잘못'}},
- {bg:'shop',text:'면이 부족해서 옆 가게에 좀 빌려야 한다. 주인이 낯설어 망설여진다.',
-  choices:[{en:'politely ask to borrow some',key:'borrow',ko:'정중히 좀 빌려달라 부탁한다'},{en:'take it without permission',key:'permission',ko:'허락 없이 가져간다'},{en:'postpone the order instead',key:'postpone',ko:'대신 주문을 미룬다'}],
-  answer:0,why:'모르는 사이라도 정중히 부탁하면 돼요.',gloss:{politely:'정중히',borrow:'빌리다',permission:'허락',postpone:'미루다',instead:'대신'}},
- {bg:'stall',text:'영업이 끝나고 치이카와가 지쳐 보인다. 내일도 도와줄 수 있는지 조심스레 묻는다.',
-  choices:[{en:'encourage her to rest',key:'encourage',ko:'쉬라고 격려한다'},{en:'insist on working more',key:'insist',ko:'더 일하자고 고집한다'},{en:'tease her for being slow',key:'tease',ko:'느리다고 놀린다'}],
-  answer:0,why:'피곤한 친구에게는 쉬라고 격려해야 해요.',gloss:{encourage:'격려하다',rest:'쉬다',insist:'고집하다',tease:'놀리다',slow:'느린'}},
- {bg:'stall',ending:true,text:'다음 날 치이카와가 활짝 웃으며 또 와줘서 고맙다고 했다. 가게 앞 간판이 햇살에 빛났다.'}
-]},
-{title:'수련 하루',level:'고등 필수',scenes:[
- {bg:'meadow',text:'토벌 수련 중 우사기가 지쳐서 그만두려 한다.',
-  choices:[{en:'cheer him on',key:'cheer',ko:'응원한다'},{en:'mock his weak stamina',key:'stamina',ko:'약한 체력을 놀린다'},{en:'abandon the training together',key:'abandon',ko:'같이 그만둔다'}],
-  answer:0,why:'힘들어하는 동료는 응원해 줘야 해요.',gloss:{cheer:'응원하다',mock:'놀리다',stamina:'체력',abandon:'그만두다,포기하다'}},
- {bg:'forest',text:'수련 중 가시덤불에 걸려 멈춰 선 치이카와. 머뭇거리며 나아가지 못한다.',
-  choices:[{en:'help her through carefully',key:'carefully',ko:'조심스럽게 도와서 지나간다'},{en:'push her forward roughly',key:'roughly',ko:'거칠게 밀어붙인다'},{en:'leave her behind',key:'behind',ko:'그냥 두고 간다'}],
-  answer:0,why:'가시덤불에 걸렸을 땐 조심스럽게 도와야 해요.',gloss:{carefully:'조심스럽게',roughly:'거칠게',behind:'뒤에 (두고)'}},
- {bg:'meadow',text:'수련이 끝날 무렵 작은 상을 두고 셋이 경쟁하게 된다. 우사기가 유독 욕심을 낸다.',
-  choices:[{en:'share the prize fairly',key:'share',ko:'상을 공평하게 나눈다'},{en:'grab it first',key:'grab',ko:'먼저 잡아챈다'},{en:'quarrel over the prize',key:'quarrel',ko:'상을 두고 다툰다'}],
-  answer:0,why:'작은 상은 공평하게 나누는 게 알맞아요.',gloss:{share:'나누다',fairly:'공평하게',grab:'잡아채다',quarrel:'다투다'}},
- {bg:'room',text:'집에 돌아와 다들 지쳐 잠들었는데, 랏코만 뒤척이며 잠을 못 이룬다.',
-  choices:[{en:'quietly admit feeling anxious',key:'anxious',ko:'불안하다고 조용히 인정한다'},{en:'hide the worry alone',key:'hide',ko:'걱정을 혼자 숨긴다'},{en:'snap at the others',key:'snap',ko:'괜히 둘에게 짜증을 낸다'}],
-  answer:0,why:'불안한 마음은 숨기기보다 조용히 인정하는 게 나아요.',gloss:{quietly:'조용히',admit:'인정하다',anxious:'불안한',hide:'숨기다',snap:'짜증 내다,쏘아붙이다'}},
- {bg:'meadow',ending:true,text:'랏코가 속마음을 말하자 둘 다 가만히 들어주었다. 다음 날 수련은 한결 가벼웠다.'}
-]},
-{title:'목욕탕 작은 사고',level:'고등 필수',scenes:[
- {bg:'bath',text:'치이카와가 실수로 물을 쏟아 하치와레의 옷이 다 젖었다.',
-  choices:[{en:'apologize right away',key:'apologize',ko:'바로 사과한다'},{en:'blame the slippery floor',key:'slippery',ko:'바닥이 미끄럽다고 탓한다'},{en:'laugh it off and leave',key:'laugh',ko:'웃어넘기고 가버린다'}],
-  answer:0,why:'실수했을 땐 바로 사과하는 게 알맞아요.',gloss:{apologize:'사과하다',slippery:'미끄러운',laugh:'웃다'}},
- {bg:'room',text:'젖은 옷을 널던 중 하치와레가 화가 나 말을 안 한다.',
-  choices:[{en:'calmly explain what happened',key:'calmly',ko:'차분히 상황을 설명한다'},{en:'shout back in frustration',key:'frustration',ko:'짜증 내며 맞받아친다'},{en:'avoid the topic entirely',key:'avoid',ko:'그 얘기를 완전히 피한다'}],
-  answer:0,why:'화난 친구에게는 차분히 설명하는 게 알맞아요.',gloss:{calmly:'차분히',frustration:'짜증,답답함',avoid:'피하다',entirely:'완전히'}},
- {bg:'bath',text:'다음 날 다시 목욕탕에 가니 우사기가 물이 너무 뜨겁다고 겁을 낸다.',
-  choices:[{en:'warn him to check the temperature first',key:'warn',ko:'먼저 온도를 확인하라고 알려준다'},{en:'push him in regardless',key:'regardless',ko:'상관없이 밀어 넣는다'},{en:'dismiss his fear as silly',key:'dismiss',ko:'걱정을 바보같다고 무시한다'}],
-  answer:0,why:'겁을 내는 친구에게는 미리 확인하라고 알려줘야 해요.',gloss:{warn:'알려주다,경고하다',temperature:'온도',regardless:'상관없이',dismiss:'무시하다'}},
- {bg:'town',text:'돌아오는 길, 하치와레가 사실은 아직 화가 안 풀렸다고 조용히 말한다.',
-  choices:[{en:'listen and apologize again',key:'listen',ko:'들어주고 다시 사과한다'},{en:'get defensive instead',key:'defensive',ko:'오히려 방어적으로 군다'},{en:'change the subject quickly',key:'subject',ko:'재빨리 화제를 바꾼다'}],
-  answer:0,why:'아직 화가 풀리지 않았다면 들어주고 다시 사과해야 해요.',gloss:{listen:'들어주다',defensive:'방어적인',subject:'화제,주제'}},
- {bg:'bath',ending:true,text:'하치와레가 결국 괜찮다고 웃었다. 목욕탕 창밖으로 노을이 번지고 있었다.'}
-]},
-{title:'장마철 가게',level:'고등 필수',scenes:[
- {bg:'shop',text:'장마로 가게 지붕에서 물이 샌다. 치이카와가 혼자 어쩔 줄 모른다.',
-  choices:[{en:'volunteer to fix the leak',key:'volunteer',ko:'자원해서 누수를 고친다'},{en:'complain about the rain',key:'rain',ko:'비가 온다고 불평한다'},{en:'postpone everything and leave',key:'leave',ko:'다 미루고 가버린다'}],
-  answer:0,why:'곤란한 상황에서는 자원해서 나서는 게 알맞아요.',gloss:{volunteer:'자원하다',leak:'누수,새는 곳',rain:'비',postpone:'미루다'}},
- {bg:'town',text:'수리 도구가 없어서 이웃에게 빌려야 한다.',
-  choices:[{en:'borrow tools from a neighbor',key:'neighbor',ko:'이웃에게 도구를 빌린다'},{en:'break in to get them',key:'break',ko:'몰래 들어가서 가져온다'},{en:'abandon the repair',key:'repair',ko:'수리를 포기한다'}],
-  answer:0,why:'도구가 없으면 이웃에게 빌리는 게 알맞아요.',gloss:{borrow:'빌리다',neighbor:'이웃',break:'침입하다',repair:'수리'}},
- {bg:'shop',text:'수리하다 손을 다친 우사기가 아픈 걸 숨기고 계속하려 한다.',
-  choices:[{en:'insist that he rest now',key:'rest',ko:'지금 쉬라고 고집한다'},{en:'permit him to continue',key:'permit',ko:'계속하게 허락한다'},{en:'tease him for being careless',key:'careless',ko:'조심성 없다고 놀린다'}],
-  answer:0,why:'다친 걸 숨기는 친구에게는 쉬라고 해야 해요.',gloss:{insist:'고집하다,주장하다',rest:'쉬다',permit:'허락하다',careless:'조심성 없는'}},
- {bg:'room',text:'비가 그치고 다들 녹초가 되어 앉아 있다. 하치와레가 조용히 감사 인사를 전한다.',
-  choices:[{en:'thank them warmly in return',key:'warmly',ko:'따뜻하게 감사를 표한다'},{en:'brush off the thanks',key:'brush',ko:'인사를 대충 넘긴다'},{en:'brag about doing most of it',key:'brag',ko:'자기가 다 했다고 자랑한다'}],
-  answer:0,why:'누군가의 감사 인사는 따뜻하게 받아주는 게 알맞아요.',gloss:{warmly:'따뜻하게',brush:'대충 넘기다',brag:'자랑하다'}},
- {bg:'shop',ending:true,text:'비가 그친 가게 지붕이 마침내 조용해졌다. 다들 젖은 몸으로 웃었다.'}
-]},
-{title:'밤 캠핑',level:'고등 필수',scenes:[
- {bg:'night',text:'캠핑 중 불이 꺼져 어두워졌다. 우사기가 겁을 먹고 조용히 있다.',
-  choices:[{en:'whisper reassurance to him',key:'whisper',ko:'속삭이며 안심시킨다'},{en:'startle him with a loud noise',key:'startle',ko:'큰 소리로 놀래킨다'},{en:'leave him alone in the dark',key:'dark',ko:'어둠 속에 혼자 둔다'}],
-  answer:0,why:'겁먹은 친구는 조용히 안심시켜야 해요.',gloss:{whisper:'속삭이다',startle:'놀래키다',dark:'어둠'}},
- {bg:'forest',text:'수풀에서 이상한 소리가 난다. 다들 긴장한다.',
-  choices:[{en:'investigate calmly together',key:'investigate',ko:'다 같이 차분히 살펴본다'},{en:'panic and scatter',key:'panic',ko:'당황해서 흩어진다'},{en:'blame each other for the noise',key:'blame',ko:'서로 소리의 탓을 돌린다'}],
-  answer:0,why:'이상한 소리가 나면 차분히 함께 살펴보는 게 알맞아요.',gloss:{investigate:'살펴보다,조사하다',panic:'당황하다',blame:'탓하다'}},
- {bg:'night',text:'불을 다시 피우는 데 실패해서 다들 춥다.',
-  choices:[{en:'patiently try again',key:'patiently',ko:'참고 다시 시도한다'},{en:'give up and sulk',key:'sulk',ko:'포기하고 시무룩해진다'},{en:'snap at whoever is near',key:'snap',ko:'옆에 있는 친구한테 짜증낸다'}],
-  answer:0,why:'실패해도 참고 다시 시도하는 게 알맞아요.',gloss:{patiently:'참고,꾸준히',sulk:'시무룩해지다',snap:'짜증 내다'}},
- {bg:'meadow',text:'동 틀 무렵, 치이카와가 밤새 한숨도 못 잤다는 걸 알게 된다.',
-  choices:[{en:'let her nap while others pack',key:'nap',ko:'그동안 혼자 자게 해준다'},{en:'wake her up anyway',key:'wake',ko:'그냥 깨운다'},{en:'mock her for staying up',key:'mock',ko:'밤새 깨 있었다고 놀린다'}],
-  answer:0,why:'밤새 못 잔 친구는 잠시 자게 해주는 게 알맞아요.',gloss:{nap:'낮잠,잠깐 자다',wake:'깨우다',mock:'놀리다'}},
- {bg:'meadow',ending:true,text:'불은 결국 다시 피어올랐고, 아침 햇살 아래 다들 나란히 잠들었다.'}
-]},
-{title:'숲속 길찾기',level:'고등 필수',scenes:[
- {bg:'forest',text:'지도를 보다가 길이 두 갈래로 나뉜 걸 발견한다. 표지판 하나는 글씨가 지워져 있다.',
-  choices:[{en:'examine the sign closely',key:'examine',ko:'표지판을 자세히 살펴본다'},{en:'guess randomly and go',key:'randomly',ko:'아무렇게나 짐작해서 간다'},{en:'refuse to choose either path',key:'refuse',ko:'둘 다 안 가겠다고 거절한다'}],
-  answer:0,why:'표지판이 지워져 있으면 자세히 살펴보는 게 알맞아요.',gloss:{examine:'살펴보다',randomly:'아무렇게나,무작위로',refuse:'거절하다'}},
- {bg:'lake',text:'호숫가 길에서 낡은 다리를 만난다. 다리가 흔들거린다.',
-  choices:[{en:'test its strength first',key:'strength',ko:'먼저 튼튼한지 시험해본다'},{en:'rush across quickly',key:'rush',ko:'서둘러 그냥 건넌다'},{en:'turn back immediately',key:'immediately',ko:'바로 돌아간다'}],
-  answer:0,why:'흔들리는 다리는 먼저 튼튼한지 시험해보는 게 알맞아요.',gloss:{strength:'튼튼함,힘',rush:'서두르다',immediately:'즉시,바로'}},
- {bg:'forest',text:'길을 잘못 들어 다들 지쳤다. 하치와레가 나서서 지도를 다시 보자고 한다.',
-  choices:[{en:'trust his suggestion',key:'trust',ko:'그의 제안을 믿는다'},{en:'doubt him and argue',key:'doubt',ko:'의심하며 다툰다'},{en:'wander off alone',key:'wander',ko:'혼자 헤매러 간다'}],
-  answer:0,why:'길을 잘 아는 사람의 제안은 믿어보는 게 알맞아요.',gloss:{trust:'믿다',doubt:'의심하다',wander:'헤매다'}},
- {bg:'town',text:'해 질 녁 겨우 마을에 도착한다. 다들 안도하며 주저앉는다.',
-  choices:[{en:'express relief together',key:'relief',ko:'다 같이 안도를 표현한다'},{en:'complain about the delay',key:'delay',ko:'늦어진 걸 불평한다'},{en:'walk away silently',key:'silently',ko:'조용히 혼자 가버린다'}],
-  answer:0,why:'무사히 도착했으면 함께 안도를 나누는 게 알맞아요.',gloss:{relief:'안도',delay:'지연,늦어짐',silently:'조용히'}},
- {bg:'town',ending:true,text:'마을 등불이 하나씩 켜지는 걸 보며 다들 나란히 걸었다.'}
-]},
-{title:'겨울 준비',level:'고등 필수',scenes:[
- {bg:'room',text:'겨울이 다가와 담요와 장작을 모아야 한다. 양이 부족해 보인다.',
-  choices:[{en:'gather more from the shed',key:'gather',ko:'창고에서 더 모아온다'},{en:'complain there is never enough',key:'complain',ko:'항상 부족하다고 불평한다'},{en:'wait and hope it is enough',key:'hope',ko:'그냥 충분하길 바란다'}],
-  answer:0,why:'부족해 보이면 더 모아오는 게 알맞아요.',gloss:{gather:'모으다',complain:'불평하다',hope:'바라다'}},
- {bg:'town',text:'장 보러 나갔다가 길에서 떨고 있는 낯선 아이를 만난다.',
-  choices:[{en:'offer a spare blanket',key:'spare',ko:'남는 담요를 건넨다'},{en:'hurry past without looking',key:'hurry',ko:'쳐다보지 않고 서둘러 지나간다'},{en:'tell it to move along',key:'move',ko:'비켜 가라고 말한다'}],
-  answer:0,why:'떨고 있는 낯선 아이에게는 남는 담요를 건네는 게 알맞아요.',gloss:{spare:'남는,여분의',hurry:'서두르다',move:'비키다,움직이다'}},
- {bg:'shop',text:'겨울 용품을 사려는데 돈이 조금 부족하다. 주인이 에누리해 주겠다고 한다.',
-  choices:[{en:'thank the owner and accept',key:'accept',ko:'감사하며 받아들인다'},{en:'refuse out of pride',key:'pride',ko:'자존심 때문에 거절한다'},{en:'demand a bigger discount',key:'demand',ko:'더 큰 할인을 요구한다'}],
-  answer:0,why:'호의는 감사하며 받아들이는 게 알맞아요.',gloss:{accept:'받아들이다',pride:'자존심',demand:'요구하다'}},
- {bg:'room',text:'겨우 준비를 마치고 다들 뿌듯해한다. 우사기가 작은 선물을 수줍게 건넨다.',
-  choices:[{en:'appreciate the small gift',key:'appreciate',ko:'작은 선물을 고마워한다'},{en:'dismiss it as useless',key:'useless',ko:'쓸모없다고 무시한다'},{en:'demand something bigger',key:'bigger',ko:'더 큰 걸 요구한다'}],
-  answer:0,why:'작은 선물이라도 고마워하는 게 알맞아요.',gloss:{appreciate:'고마워하다',useless:'쓸모없는',bigger:'더 큰'}},
- {bg:'room',ending:true,text:'창밖에 첫눈이 내리기 시작했다. 담요 속에서 다들 조용했다.'}
-]},
-{title:'생일 준비',level:'고등 필수',scenes:[
- {bg:'stall',text:'하치와레의 생일이 다가온다. 몰래 준비해야 한다.',
-  choices:[{en:'plan it in secret',key:'secret',ko:'몰래 계획을 짠다'},{en:'announce it loudly',key:'announce',ko:'크게 소문낸다'},{en:'forget about it entirely',key:'forget',ko:'완전히 잊어버린다'}],
-  answer:0,why:'깜짝 파티는 몰래 계획해야 해요.',gloss:{secret:'비밀의,몰래',announce:'알리다,소문내다',forget:'잊다'}},
- {bg:'shop',text:'선물을 고르는데 예산이 빠듯하다.',
-  choices:[{en:'choose something thoughtful and simple',key:'thoughtful',ko:'소박하지만 정성스러운 걸 고른다'},{en:'overspend without a plan',key:'overspend',ko:'계획 없이 과하게 쓴다'},{en:'pick whatever is cheapest',key:'cheapest',ko:'그냥 가장 싼 걸 고른다'}],
-  answer:0,why:'예산이 빠듯하면 소박하지만 정성스러운 선물이 알맞아요.',gloss:{thoughtful:'정성스러운,사려 깊은',overspend:'과하게 쓰다',cheapest:'가장 싼'}},
- {bg:'town',text:'깜짝 파티 장소를 정하는데 비가 올까 걱정이다.',
-  choices:[{en:'prepare a backup place',key:'backup',ko:'비 올 때를 대비한 장소도 준비한다'},{en:'ignore the forecast',key:'forecast',ko:'날씨 예보를 무시한다'},{en:'cancel the plan at once',key:'cancel',ko:'바로 계획을 취소한다'}],
-  answer:0,why:'비가 걱정되면 대비한 장소를 준비하는 게 알맞아요.',gloss:{backup:'대비,비상용',forecast:'예보',cancel:'취소하다'}},
- {bg:'room',text:'생일 당일, 하치와레가 일찍 와서 들킬 뻔한다.',
-  choices:[{en:'distract him for a while',key:'distract',ko:'잠시 그의 관심을 돌린다'},{en:'panic and hide badly',key:'badly',ko:'당황해서 엉성하게 숨는다'},{en:'confess the surprise early',key:'confess',ko:'일찍 깜짝 선물을 말해버린다'}],
-  answer:0,why:'들킬 뻔하면 잠시 관심을 돌리는 게 알맞아요.',gloss:{distract:'관심을 돌리다',badly:'엉성하게,심하게',confess:'털어놓다,고백하다'}},
- {bg:'room',ending:true,text:'다 같이 "생일 축하해"를 외치자 하치와레가 놀란 얼굴로 웃었다.'}
-]},
-{title:'수료식 전날',level:'고등 필수',scenes:[
- {bg:'meadow',text:'긴 수련 기간이 끝나가고, 다들 그동안을 돌아본다.',
-  choices:[{en:'reflect on how far they have come',key:'reflect',ko:'그동안의 과정을 돌아본다'},{en:'rush to the next thing',key:'rush',ko:'서둘러 다음으로 넘어간다'},{en:'dismiss the whole season',key:'dismiss',ko:'그 기간 전체를 별것 아니라 여긴다'}],
-  answer:0,why:'긴 과정이 끝나갈 땐 돌아보는 시간이 알맞아요.',gloss:{reflect:'돌아보다,성찰하다',rush:'서두르다',dismiss:'별것 아니라 여기다'}},
- {bg:'room',text:'다음 계절에 뭘 할지 의견이 갈린다.',
-  choices:[{en:'compromise on a shared plan',key:'compromise',ko:'서로 타협해서 계획을 정한다'},{en:'insist on ones own way',key:'insist',ko:'자기 방식만 고집한다'},{en:'quarrel and split up',key:'quarrel',ko:'다투고 흩어진다'}],
-  answer:0,why:'의견이 갈리면 서로 타협하는 게 알맞아요.',gloss:{compromise:'타협하다',insist:'고집하다',quarrel:'다투다'}},
- {bg:'town',text:'마을 사람들이 작은 축하 행사를 준비해 주었다.',
-  choices:[{en:'accept the kindness graciously',key:'graciously',ko:'호의를 품위 있게 받아들인다'},{en:'feel embarrassed and flee',key:'embarrassed',ko:'쑥스러워서 도망친다'},{en:'brush off the gesture',key:'gesture',ko:'그 마음을 대충 넘긴다'}],
-  answer:0,why:'누군가의 호의는 품위 있게 받아들이는 게 알맞아요.',gloss:{graciously:'품위 있게',embarrassed:'쑥스러운',gesture:'(마음을 담은) 행동'}},
- {bg:'night',text:'다들 모여 앞으로도 함께하자고 약속한다.',
-  choices:[{en:'promise to stay in touch',key:'promise',ko:'계속 연락하자고 약속한다'},{en:'avoid the subject entirely',key:'avoid',ko:'그 얘기를 완전히 피한다'},{en:'make an insincere promise',key:'insincere',ko:'진심 없이 약속한다'}],
-  answer:0,why:'앞으로도 함께하자는 약속은 진심으로 하는 게 알맞아요.',gloss:{promise:'약속하다',avoid:'피하다',insincere:'진심이 없는'}},
- {bg:'night',ending:true,text:'별빛 아래 다 같이 걸으며, 다음 계절을 기다리기로 했다.'}
-]}
-];
+// ---------- settings (theme + level, from data.js) ----------
+const SK='pxl-rakko-settings-v1';
+let SETTINGS={theme:'rakko',level:'hs'};
+function loadSettings(){try{const v=JSON.parse(localStorage.getItem(SK)||'null');if(v)SETTINGS=Object.assign(SETTINGS,v)}catch(e){}}
+function saveSettings(){try{localStorage.setItem(SK,JSON.stringify(SETTINGS))}catch(e){}}
+loadSettings();
+function themeName(){const t=THEMES.find(x=>x.id===SETTINGS.theme);return t?t.name:'랏코'}
+function swapTheme(text){const p=themeName();if(!text||p==='랏코')return text;
+  return text.split('랏코').join('\u0000').split(p).join('랏코').split('\u0000').join(p);
+}
 
 // ---------- game ----------
-const box=document.getElementById('box'),home=document.getElementById('home'),barTitle=document.getElementById('barTitle'),tag=document.getElementById('sceneTag');
-const PK='pxl-rakko-progress-v1';
-let PROG={completed:{},cur:null};
-function loadProg(){try{const v=JSON.parse(localStorage.getItem(PK)||'null');if(v)PROG=v}catch(e){}}
-function saveProg(){try{localStorage.setItem(PK,JSON.stringify(PROG))}catch(e){}}
+const box=document.getElementById('box'),home=document.getElementById('home'),barTitle=document.getElementById('barTitle'),tag=document.getElementById('sceneTag'),settingsBtn=document.getElementById('settingsBtn');
+const PK='pxl-rakko-progress-v2';
+let PROGALL={};
+function loadProg(){try{const v=JSON.parse(localStorage.getItem(PK)||'null');if(v)PROGALL=v}catch(e){}}
+function saveProg(){try{localStorage.setItem(PK,JSON.stringify(PROGALL))}catch(e){}}
+function curProg(){if(!PROGALL[SETTINGS.level])PROGALL[SETTINGS.level]={completed:{},cur:null};return PROGALL[SETTINGS.level]}
 loadProg();
 let S=null; // {epIdx, sceneIdx, score, asked, epTitle}
 const NUM=['1','2','3','4'];
 const STOP=new Set('a an the to of in on at for with by from up out off into onto over under his her him she he it its they them their you your my me we us our i is are be am was were this that these those and or but not no as so than then'.split(' '));
 
-function qCount(ep){return ep.scenes.filter(s=>!s.ending).length}
+function renderSettings(){
+  home.hidden=false;setScene('room');tag.textContent='설정';barTitle.textContent='설정';
+  box.innerHTML=`
+    <div class="setsec">
+      <h3>테마 (주인공)</h3>
+      <div class="setgrid" id="themeGrid">${THEMES.map(t=>`<button class="setchip" data-id="${t.id}" aria-pressed="${SETTINGS.theme===t.id}">${esc(t.name)}</button>`).join('')}</div>
+    </div>
+    <div class="setsec">
+      <h3>난이도</h3>
+      <div class="setgrid" id="levelGrid">${LEVELS.map(l=>`<button class="setchip" data-id="${l.id}" aria-pressed="${SETTINGS.level===l.id}">${esc(l.label)}</button>`).join('')}</div>
+    </div>
+    <p class="note">난이도를 바꾸면 그 난이도의 진행도가 따로 저장돼요. 테마는 이야기 속 주인공 이름만 바뀌어요.</p>
+  `;
+  box.querySelectorAll('#themeGrid .setchip').forEach(b=>b.onclick=()=>{SETTINGS.theme=b.dataset.id;saveSettings();renderSettings()});
+  box.querySelectorAll('#levelGrid .setchip').forEach(b=>b.onclick=()=>{SETTINGS.level=b.dataset.id;saveSettings();renderSettings()});
+}
+settingsBtn.onclick=renderSettings;
 
 function renderMap(){
-  if(home)home.hidden=true;setScene('meadow');tag.textContent='지도';barTitle.textContent='랏코 단어 에피소드';
+  home.hidden=true;setScene('meadow');tag.textContent='지도';barTitle.textContent='랏코 단어 에피소드';
+  const prog=curProg();
+  const levelLabel=(LEVELS.find(l=>l.id===SETTINGS.level)||{}).label||'';
   const rows=EPISODES.map((ep,i)=>{
-    const done=PROG.completed[i];
-    const locked=i>0 && !PROG.completed[i-1];
-    const resuming=PROG.cur && PROG.cur.epIdx===i && !done;
+    const done=prog.completed[i];
+    const locked=i>0 && !prog.completed[i-1];
+    const resuming=prog.cur && prog.cur.epIdx===i && !done;
     const stat=done?`완료 · ${done.score}/${done.asked}`:(locked?'잠김':(resuming?'이어하기':'시작'));
-    return `<button class="node ${done?'done':''}" data-i="${i}" ${locked?'disabled':''}>
-      <span class="no">${done?'✓':String(i+1).padStart(2,'0')}</span>
-      <span class="mid"><span class="et">${esc(ep.title)}</span><span class="es">${esc(ep.level)} · ${qCount(ep)}문제</span></span>
-      <span class="stat">${esc(stat)}</span>
-    </button>`;
+    const pos=i%3===0?'pos-c':(i%3===1?'pos-r':'pos-l');
+    return `<div class="maprow ${pos}"><button class="mapnode ${done?'done':''}" data-i="${i}" ${locked?'disabled':''} aria-label="${esc(ep.title)} ${esc(stat)}">
+      <span class="circle">${done?'✓':String(i+1).padStart(2,'0')}</span>
+      <span class="label">${esc(ep.title)}</span>
+    </button></div>`;
   }).join('');
-  box.innerHTML=`<p class="narr">장면을 읽고, 랏코에게 가장 알맞은 행동을 영어로 골라요. 한 에피소드를 마치면 다음 에피소드가 열려요.</p><div class="path">${rows}</div>`;
-  box.querySelectorAll('.node').forEach(b=>b.onclick=()=>startEpisode(+b.dataset.i));
+  box.innerHTML=`<p class="narr">${esc(themeName())} 테마 · ${esc(levelLabel)}. 장면을 읽고 가장 알맞은 행동을 영어로 골라요.</p><div class="mappath">${rows}</div>`;
+  box.querySelectorAll('.mapnode').forEach(b=>b.onclick=()=>startEpisode(+b.dataset.i));
 }
 
 function startEpisode(i){
-  const resume=PROG.cur&&PROG.cur.epIdx===i&&!PROG.completed[i];
-  S=resume?{epIdx:i,sceneIdx:PROG.cur.sceneIdx,score:PROG.cur.score,asked:PROG.cur.asked,epTitle:EPISODES[i].title}
+  const prog=curProg();
+  const resume=prog.cur&&prog.cur.epIdx===i&&!prog.completed[i];
+  S=resume?{epIdx:i,sceneIdx:prog.cur.sceneIdx,score:prog.cur.score,asked:prog.cur.asked,epTitle:EPISODES[i].title}
            :{epIdx:i,sceneIdx:0,score:0,asked:0,epTitle:EPISODES[i].title};
-  PROG.cur={epIdx:S.epIdx,sceneIdx:S.sceneIdx,score:S.score,asked:S.asked};saveProg();
+  prog.cur={epIdx:S.epIdx,sceneIdx:S.sceneIdx,score:S.score,asked:S.asked};saveProg();
   home.hidden=false;showScene();
 }
 
 function header(){const ep=EPISODES[S.epIdx];const n='EP.'+String(S.epIdx+1).padStart(2,'0');
-  barTitle.innerHTML=`<small>${n}</small>${esc(ep.title)}`;tag.textContent=n+' · '+(S.sceneIdx+1)+'/'+ep.scenes.length}
+  barTitle.innerHTML=`<small>${n}</small>${esc(themeName())} · ${esc(ep.title)}`;tag.textContent=n+' · '+(S.sceneIdx+1)+'/'+(ep.scenes.length+1)}
 
 function typeOut(el,text,done){
   let i=0;el.textContent='';
@@ -446,52 +334,57 @@ function hl(en,key){const e=esc(en);if(!key)return e;const re=new RegExp('('+key
 function shuffled(n){const a=[...Array(n).keys()];for(let i=n-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
 
 function showScene(){
-  const sc=EPISODES[S.epIdx].scenes[S.sceneIdx];
-  setScene(sc.bg);header();
-  if(sc.ending){
+  const ep=EPISODES[S.epIdx];
+  header();
+  if(S.sceneIdx>=ep.scenes.length){
+    const end=ep.ending;setScene(end.bg);
     box.innerHTML=`<p class="narr" id="narr"></p><p class="verdict" id="vd" hidden></p><div class="row" id="nx" hidden></div>`;
-    typeOut(document.getElementById('narr'),sc.text,()=>endEpisode());
+    typeOut(document.getElementById('narr'),swapTheme(end.text),()=>endEpisode());
     return;
   }
+  const scene=ep.scenes[S.sceneIdx];
+  const lvData=scene.levels[SETTINGS.level]||scene.levels.hs;
+  setScene(scene.bg);
   box.innerHTML=`<p class="narr" id="narr"></p><div class="q" id="q" hidden></div><div class="choices" id="ch" hidden></div><p class="verdict" id="vd" hidden></p><div class="save" id="sv" hidden></div><div class="row" id="nx" hidden></div>`;
   const narr=document.getElementById('narr'),ch=document.getElementById('ch'),q=document.getElementById('q');
-  const order=shuffled(sc.choices.length);
-  q.innerHTML=`<span class="goal">랏코에게 알맞은 행동은?</span>`;
-  ch.innerHTML=order.map((i,pos)=>{const x=sc.choices[i];return `<button class="choice" data-i="${i}"><span class="n">${NUM[pos]}</span><span>${hl(x.en,x.key)}</span><span class="ko" hidden>${esc(x.ko)}</span></button>`}).join('');
+  const order=shuffled(lvData.choices.length);
+  q.innerHTML=`<span class="goal">${esc(themeName())}에게 알맞은 행동은?</span>`;
+  ch.innerHTML=order.map((i,pos)=>{const x=lvData.choices[i];return `<button class="choice" data-i="${i}"><span class="n">${NUM[pos]}</span><span>${hl(x.en,x.key)}</span><span class="ko" hidden>${esc(x.ko)}</span></button>`}).join('');
   const reveal=()=>{q.hidden=false;ch.hidden=false;ch.querySelector('.choice').focus({preventScroll:true})};
-  typeOut(narr,sc.text,reveal);
-  ch.querySelectorAll('.choice').forEach(b=>b.onclick=()=>choose(sc,+b.dataset.i));
+  typeOut(narr,swapTheme(scene.text),reveal);
+  ch.querySelectorAll('.choice').forEach(b=>b.onclick=()=>choose(scene,lvData,+b.dataset.i));
 }
 
-function wordChips(sc){
-  const gloss=sc.gloss||{},seen=new Set(),out=[];
-  sc.choices.forEach(x=>x.en.toLowerCase().replace(/[^a-z' -]/g,' ').split(/\s+/).forEach(w=>{
+function wordChips(lvData){
+  const gloss={};lvData.choices.forEach(x=>{gloss[x.key.toLowerCase()]=x.ko});
+  const seen=new Set(),out=[];
+  lvData.choices.forEach(x=>x.en.toLowerCase().replace(/[^a-z' -]/g,' ').split(/\s+/).forEach(w=>{
     w=w.replace(/^'+|'+$/g,'');if(!w||STOP.has(w)&&!gloss[w]||seen.has(w))return;seen.add(w);
     const ko=gloss[w];if(ko)out.push({w,ko,ex:x.en})}));
   return out;
 }
-function choose(sc,i){
+function choose(scene,lvData,i){
   const ch=document.getElementById('ch'),nx=document.getElementById('nx'),sv=document.getElementById('sv'),vd=document.getElementById('vd');
-  const ok=i===sc.answer;
+  const ok=i===lvData.answer;
   ch.querySelectorAll('.choice').forEach(b=>{const j=+b.dataset.i;b.disabled=true;b.querySelector('.ko').hidden=false;
-    if(j===sc.answer)b.classList.add('right');else if(j===i)b.classList.add('wrong')});
+    if(j===lvData.answer)b.classList.add('right');else if(j===i)b.classList.add('wrong')});
   S.asked+=1;if(ok)S.score+=1;
   vd.hidden=false;vd.className='verdict '+(ok?'ok':'no');
-  vd.textContent=(ok?'정답':'오답 · 알맞은 행동은 '+sc.choices[sc.answer].en)+(sc.why?'\n'+sc.why:'');
-  const chips=wordChips(sc);
+  vd.textContent=(ok?'정답':'오답 · 알맞은 행동은 '+lvData.choices[lvData.answer].en)+(scene.why?'\n'+swapTheme(scene.why):'');
+  const chips=wordChips(lvData);
   if(chips.length){sv.hidden=false;
     sv.innerHTML=`<span class="lab">모르는 단어를 눌러 단어장에 넣기</span><div class="wchips">${chips.map(x=>`<button class="wchip" data-id="${esc(wid(x.w))}" aria-pressed="${!!words[wid(x.w)]}">${esc(x.w)}<small>${esc(x.ko)}</small></button>`).join('')}</div>`;
     sv.querySelectorAll('.wchip').forEach((b,k)=>b.onclick=()=>toggleWord(chips[k].w,chips[k].ko,chips[k].ex));}
-  PROG.cur={epIdx:S.epIdx,sceneIdx:S.sceneIdx,score:S.score,asked:S.asked};saveProg();
-  nx.hidden=false;const last=S.sceneIdx+2>=EPISODES[S.epIdx].scenes.length;
+  const prog=curProg();prog.cur={epIdx:S.epIdx,sceneIdx:S.sceneIdx,score:S.score,asked:S.asked};saveProg();
+  nx.hidden=false;const last=S.sceneIdx+1>=EPISODES[S.epIdx].scenes.length;
   nx.innerHTML=`<button class="btn" id="next">${last?'마지막 장면':'다음 장면'}</button>`;
-  document.getElementById('next').onclick=()=>{S.sceneIdx+=1;PROG.cur={epIdx:S.epIdx,sceneIdx:S.sceneIdx,score:S.score,asked:S.asked};saveProg();showScene()};
+  document.getElementById('next').onclick=()=>{S.sceneIdx+=1;const p=curProg();p.cur={epIdx:S.epIdx,sceneIdx:S.sceneIdx,score:S.score,asked:S.asked};saveProg();showScene()};
 }
 
 function endEpisode(){
   const nx=document.getElementById('nx'),vd=document.getElementById('vd');nx.hidden=false;
   vd.hidden=false;vd.className='verdict';vd.textContent=`이번 에피소드 ${S.score} / ${S.asked} 정답`;
-  PROG.completed[S.epIdx]={score:S.score,asked:S.asked};PROG.cur=null;saveProg();
+  const prog=curProg();prog.completed[S.epIdx]={score:S.score,asked:S.asked};prog.cur=null;saveProg();
   nx.innerHTML=`<button class="btn" id="toMap">지도로</button>`;
   document.getElementById('toMap').onclick=renderMap;
 }
