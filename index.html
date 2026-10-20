@@ -1,4 +1,4 @@
-<title>랏코 단어 에피소드</title>
+<title>먼작귀 에피 단어장</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -114,7 +114,7 @@ body{
 
 <div class="app">
   <div class="bar">
-    <div class="title" id="barTitle">랏코 단어 에피소드</div>
+    <div class="title" id="barTitle">먼작귀 에피 단어장</div>
     <button class="pill" id="wordsBtn">단어장 0</button>
     <button class="pill" id="settingsBtn">설정</button>
     <button class="pill" id="home" hidden>지도</button>
@@ -293,7 +293,7 @@ function renderSettings(){
 settingsBtn.onclick=renderSettings;
 
 function renderMap(){
-  home.hidden=true;setScene('meadow');tag.textContent='지도';barTitle.textContent='랏코 단어 에피소드';
+  home.hidden=true;setScene('meadow');tag.textContent='지도';barTitle.textContent='먼작귀 에피 단어장';
   const prog=curProg();
   const levelLabel=(LEVELS.find(l=>l.id===SETTINGS.level)||{}).label||'';
   const rows=EPISODES.map((ep,i)=>{
